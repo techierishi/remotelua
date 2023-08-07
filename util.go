@@ -49,16 +49,16 @@ func PrintFile(filePath string) {
 
 	scanner := bufio.NewScanner(file)
 
-	fmt.Println(fmt.Sprintf("File Path : [%s]", filePath))
+	colorSyntax(fmt.Sprintf("-- File Path : [%s]", filePath))
 	for scanner.Scan() {
 		colorSyntax(scanner.Text())
 	}
 
 }
 
-func hasTrust() bool {
+func YesNo(message string) bool {
 	prompt := promptui.Select{
-		Label: "Do you trust this code [Y/n]",
+		Label: message,
 		Items: []string{"No", "Yes"},
 	}
 	_, result, err := prompt.Run()

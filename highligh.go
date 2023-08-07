@@ -2,17 +2,21 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/zyedidia/highlight"
+
+	"embed"
 )
 
+// DO NOT DELETE NEXT LINE
+//
+//go:embed lua.yaml
+var f embed.FS
+
 func colorSyntax(inputString string) {
-
-	syntaxFile, _ := ioutil.ReadFile("lua.yaml")
-
+	syntaxFile, _ := f.ReadFile("lua.yaml")
 	syntaxDef, err := highlight.ParseDef(syntaxFile)
 	if err != nil {
 		fmt.Println(err)
@@ -41,7 +45,7 @@ func colorSyntax(inputString string) {
 				} else if group == highlight.Groups["constant.number"] {
 					color.Set(color.FgCyan)
 				} else if group == highlight.Groups["comment"] {
-					color.Set(color.FgHiGreen)
+					color.Set(color.FgHiBlack)
 				} else {
 					color.Unset()
 				}

@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -11,8 +12,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"log"
+	"github.com/google/go-cmp/cmp"
 )
+
+type DiffError struct {
+	Message string
+}
+
+func (e DiffError) Error() string {
+	return e.Message
+}
 
 type FileDownloader struct {
 	TargetURL string
@@ -52,20 +61,41 @@ func EncodeString(input string, size int) (string, error) {
 	return encodedString, nil
 }
 
-func (d *FileDownloader) DownloadFile() (*string, error) {
+func DiffCheck(incomingFilePath string, existingFilePath string) (*string, error) {
+	inBytes, err := os.ReadFile(incomingFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading incoming file %s", err)
+	}
+
+	existingBytes, err := os.ReadFile(existingFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading existing file %s", err)
+	}
+	diff := cmp.Diff(string(inBytes), string(existingBytes))
+
+	if diff != "" {
+		return &diff, DiffError{Message: "Diff present in the file"}
+	} else {
+		return nil, nil
+	}
+}
+
+func (d *FileDownloader) DownloadFile(onDiff func(diff *string) bool) (*string, error) {
 	tempDir := os.TempDir()
 	hash, err := EncodeString(d.TargetURL, 8)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode url to hash: %s", err)
 	}
+	fileName, err := GetFileNameFromURL(d.TargetURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get filename: %s", err)
+	}
 
 	tempFolderName := fmt.Sprintf("rlua_%s", hash)
 	tempFolder := filepath.Join(tempDir, tempFolderName)
+	destPath := filepath.Join(tempFolder, fileName)
 
-	// Remove the folder if already present
-	os.RemoveAll(tempFolder)
-
-	err = os.Mkdir(tempFolder, 0755)
+	err = os.MkdirAll(tempFolder, 0755)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary folder: %s", err)
 	}
@@ -81,22 +111,29 @@ func (d *FileDownloader) DownloadFile() (*string, error) {
 		return nil, fmt.Errorf("failed to download file: %s", err)
 	}
 	defer resp.Body.Close()
-
 	_, err = io.Copy(tempFile, resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write to temporary file: %s", err)
 	}
 
-	fileName, err := GetFileNameFromURL(d.TargetURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get filename: %s", err)
+	_, err = os.Stat(destPath)
+	if err == nil {
+		diff, err := DiffCheck(tempFile.Name(), destPath)
+		var diffError DiffError
+		if err != nil && !errors.As(err, &diffError) {
+			return nil, err
+		}
+
+		hasDiff := onDiff(diff)
+		if diff != nil && !hasDiff {
+			return nil, fmt.Errorf("execution stopped")
+		}
 	}
-	destPath := filepath.Join(tempFolder, fileName)
+
 	err = os.Rename(tempFile.Name(), destPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to move temporary file: %s", err)
 	}
 
-	log.Printf("File downloaded and saved to: %s", destPath)
-	return &destPath, nil
+	return &destPath, err
 }

@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/cjoudrey/gluahttp v0.0.0-20201111170219-25003d9adfa9
 	github.com/fatih/color v1.15.0
+	github.com/google/go-cmp v0.5.9
 	github.com/manifoldco/promptui v0.9.0
 	github.com/urfave/cli/v2 v2.25.7
 	github.com/yuin/gopher-lua v1.1.0

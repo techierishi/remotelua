@@ -12,5 +12,8 @@ go install github.com/techierishi/remotelua
 ### Usage
 
 ```bash
-remotelua <url-to-lua-file>
+remotelua [-s] <url-to-lua-file> 
 ```
+
+> By default it will show the code that is going to be executed
+> Pass -s flag to run the code silently
