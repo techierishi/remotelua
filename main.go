@@ -4,28 +4,53 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/urfave/cli/v2"
 )
 
-func main() {
+func RunnerFactory(key string) Runner {
+	switch key {
+	case "silent":
+		return &SilentRunner{}
+	default:
+		return &SecureRunner{}
+	}
+}
 
-	args := os.Args[1]
-	if len(args) < 1 {
+func exec(fileURL string, silent bool) {
+
+	if len(fileURL) < 1 {
 		log.Fatal(fmt.Errorf("no file path provided"))
 	}
 
-	downloader := NewFileDownloader(args)
-	filePath, err := downloader.DownloadFile()
-	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+	runner := RunnerFactory("secure")
+	if silent {
+		runner = RunnerFactory("silent")
 	}
 
-	// dps, err := deps(*filePath)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// } else {
-	// 	log.Println(*dps)
+	runner.run(fileURL)
+}
+func main() {
+	app := &cli.App{
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "silent",
+				Aliases: []string{"s"},
+				Value:   false,
+				Usage:   "Execute silently",
+			},
+		},
+		Action: func(cCtx *cli.Context) error {
 
-	// }
+			if cCtx.NArg() > 0 {
+				fileURL := cCtx.Args().Get(0)
+				exec(fileURL, cCtx.Bool("silent"))
+			}
+			return nil
+		},
+	}
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 
-	run(*filePath)
 }

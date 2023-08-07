@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -33,16 +32,6 @@ func generateRandomName() string {
 		name[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(name)
-}
-
-func (d *FileDownloader) GetFileNameFromURL(urlString string) (string, error) {
-	parsedURL, err := url.Parse(urlString)
-	if err != nil {
-		return "", err
-	}
-
-	fileName := filepath.Base(parsedURL.Path)
-	return fileName, nil
 }
 
 func EncodeString(input string, size int) (string, error) {
@@ -98,7 +87,7 @@ func (d *FileDownloader) DownloadFile() (*string, error) {
 		return nil, fmt.Errorf("failed to write to temporary file: %s", err)
 	}
 
-	fileName, err := d.GetFileNameFromURL(d.TargetURL)
+	fileName, err := GetFileNameFromURL(d.TargetURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get filename: %s", err)
 	}
