@@ -6,7 +6,7 @@ Run lua script remotely
 ### Installation
 
 ```bash
-go install github.com/techierishi/remotelua
+go install github.com/techierishi/remotelua@latest
 ```
 
 ### Usage
